@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SG Wealth Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-l">
+    <h1>SG Wealth Dashboard</h1>
+    <div class="hdr-meta"><div class="dot"></div><span id="savedLbl">Loading…</span></div>
+  </div>
+  <div class="hdr-r">
+    <div class="cpf-tog" onclick="toggleAccrue()" title="Add monthly contributions since your last confirmed balance">EST <span class="cpf-badge on" id="accBadge">ON</span></div>
+    <div class="cpf-tog" onclick="toggleCpf()">CPF <span class="cpf-badge on" id="cpfBadge">ON</span></div>
+    <button class="btn btn-ic" onclick="window.__openFx()" title="Currency rates">FX</button>
+    <button class="btn btn-ic" id="themeBtn" onclick="toggleTheme()"></button>
+    <button class="btn btn-ic" onclick="window.importData()" title="Import JSON"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 9 12 4 17 9"/><line x1="12" y1="4" x2="12" y2="16"/></svg></button>
+    <button class="btn" onclick="window.exportData()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="left">
+    <div class="left-hdr"><span class="left-title">Accounts</span><span class="yr-chip" id="latestYrChip">—</span></div>
+    <div class="left-acts">
+      <button class="btn" onclick="window.__openAdd(false)">+ Asset</button>
+      <button class="btn" style="color:var(--red);border-color:rgba(220,38,38,.3)" onclick="window.__openAdd(true)">+ Liability</button>
+    </div>
+    <div class="ctrl-bar">
+      <select class="sel" id="filtSel" onchange="setFilter(this.value)"></select>
+      <select class="sel" id="sortSel" onchange="setSort(this.value)">
+        <option value="value">Value ↓</option>
+        <option value="name">Name A–Z</option>
+        <option value="growth">Growth ↓</option>
+        <option value="custom">Custom order</option>
+      </select>
+      <button class="arc-tog" id="arcTog" onclick="toggleArchived()" title="Show archived"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg></button>
+    </div>
+    <div class="left-body" id="platList"></div>
+  </aside>
+
+  <div class="right">
+    <div class="r1">
+      <div class="hero">
+        <div class="hero-in">
+          <div>
+            <div class="h-lbl" id="hMode">NET WORTH</div>
+            <div class="h-val" id="hVal">S$0</div>
+            <div class="h-chg" id="hChg">—</div>
+          </div>
+          <div class="hero-r">
+            <div class="h-st"><div class="h-st-l">Total Assets</div><div class="h-st-v" id="hAssets">S$0</div></div>
+            <div class="h-st"><div class="h-st-l">Liabilities</div><div class="h-st-v neg" id="hLiab">S$0</div></div>
+            <div class="cpf-note" id="cpfNote" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card donut-card">
+        <div class="dc-t">Allocation</div>
+        <div class="dc-s">Non-CPF assets</div>
+        <div class="dn-wrap">
+          <div class="dn-ring"><canvas id="donutChart"></canvas><div class="dn-ctr"><div class="dn-cv" id="dTotal">—</div><div class="dn-cl">Non-CPF</div></div></div>
+          <div class="al-list" id="allocList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="r2">
+      <div class="card mcard"><div class="m-l">Invest + Crypto</div><div class="m-v" id="mInv">S$0</div><div class="m-c" id="mInvC">—</div></div>
+      <div class="card mcard"><div class="m-l">Cash</div><div class="m-v" id="mCash">S$0</div><div class="m-c" id="mCashC">—</div></div>
+      <div class="card mcard"><div class="m-l">CPF + Property</div><div class="m-v" id="mCpf">S$0</div><div class="m-c" id="mCpfC">—</div></div>
+      <div class="card mcard"><div class="m-l">Monthly In</div><div class="m-v blu" id="mMon">S$0</div><div class="m-c" id="mMonC">—</div></div>
+      <div class="card ms-card">
+        <div class="ms-top"><div class="ms-tag">Wealth Roadmap</div><div class="ms-pill" id="msNext" onclick="window.__openMs()">—</div></div>
+        <div class="ms-rail"><div class="ms-fill" id="msFill" style="width:0%"></div></div>
+        <div class="ms-nodes" id="msNodes"></div>
+      </div>
+    </div>
+
+    <div class="r3">
+      <div class="card tc">
+        <div class="tc-hdr">
+          <div><div class="tc-t">Net Worth by Year</div><div class="tc-s" id="tcSub">Add year entries to build your history</div></div>
+          <div class="tc-r">
+            <div class="proj-tog" id="projTog" onclick="toggleProj()">Project 3Y</div>
+            <div class="ttabs">
+              <button class="tt" onclick="setTf(3,this)">3Y</button>
+              <button class="tt" onclick="setTf(5,this)">5Y</button>
+              <button class="tt" onclick="setTf(10,this)">10Y</button>
+              <button class="tt active" onclick="setTf(0,this)">All</button>
+            </div>
+          </div>
+        </div>
+        <div class="ch"><canvas id="lineChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Account modal -->
+<div class="ov" id="ov">
+  <div class="modal">
+    <div class="mhdr"><h2 id="modalH">Add Entry</h2><button class="mx" onclick="window.__closeModal()">✕</button></div>
+    <div class="mbody">
+      <div class="field"><label>Type</label>
+        <div class="type-row">
+          <button class="type-btn active" id="tBtnA" onclick="window.__setType(false)">Asset</button>
+          <button class="type-btn" id="tBtnL" onclick="window.__setType(true)">Liability</button>
+        </div>
+      </div>
+      <div class="field"><label>Name &amp; currency</label>
+        <div class="frow">
+          <input type="text" id="fName" placeholder="e.g. IBKR, DBS, CPF OA">
+          <select id="fCcy" onchange="window.__renderYrRows()"></select>
+        </div>
+      </div>
+      <div class="field"><label>Category</label><div class="cat-grid" id="catGrid"></div></div>
+      <div class="field">
+        <div class="yr-hdr"><label id="yrLabel">Value by year</label><button class="yr-add" onclick="window.__addYearRow()">+ Add year</button></div>
+        <div class="yr-cols"><span id="amtCol">Amount</span><span style="text-align:center">As of</span><span style="text-align:center">Year</span><span></span><span></span></div>
+        <div class="yr-list" id="yrList"></div>
+        <div class="yr-dup" id="yrDup">Duplicate years — each year can only appear once.</div>
+        <div class="fhint">Leave a row blank to skip that year — the previous value carries forward.</div>
+      </div>
+      <div class="field" id="monField">
+        <label>Monthly contribution <span id="monCcy" style="color:var(--t3);font-weight:400"></span></label>
+        <input type="number" id="fMon" placeholder="0" min="0" step="1">
+        <div class="fhint">Recurring amount you add each month. With <strong>EST</strong> on, this accrues into your net worth automatically as each full month passes since your last saved balance.</div>
+      </div>
+      <div class="field">
+        <label class="chk-row" for="fArc"><input type="checkbox" id="fArc"><span>Archive this account</span></label>
+        <div class="fhint">Archived accounts are hidden from the list but still counted in totals.</div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-p" style="flex:1" onclick="window.__saveAcc()">Save</button>
+      <button class="btn btn-d" id="delBtn" style="display:none" onclick="window.__deleteAcc()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div class="ov" id="cfOv">
+  <div class="modal sm">
+    <div class="mhdr"><h2 id="cfTitle">Confirm</h2><button class="mx" onclick="window.__closeCf()">✕</button></div>
+    <div class="mbody"><div class="cf-msg" id="cfMsg"></div></div>
+    <div class="mfoot">
+      <button class="btn" style="flex:1" onclick="window.__closeCf()">Cancel</button>
+      <button class="btn btn-d" style="flex:1" id="cfYes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- FX modal -->
+<div class="ov" id="fxOv">
+  <div class="modal sm">
+    <div class="mhdr"><h2>Currency rates</h2><button class="mx" onclick="window.__closeFx()">✕</button></div>
+    <div class="mbody">
+      <div class="fhint" style="margin-bottom:10px">How many SGD one unit of each currency is worth. Update manually when rates move.</div>
+      <div id="fxList"></div>
+    </div>
+    <div class="mfoot"><button class="btn btn-p" style="flex:1" onclick="window.__saveFx()">Save rates</button></div>
+  </div>
+</div>
+
+<!-- Milestones modal -->
+<div class="ov" id="msOv">
+  <div class="modal sm">
+    <div class="mhdr"><h2>Edit milestones</h2><button class="mx" onclick="window.__closeMs()">✕</button></div>
+    <div class="mbody">
+      <div id="msList"></div>
+      <button class="yr-add" onclick="window.__addMsRow()" style="margin-top:6px">+ Add milestone</button>
+    </div>
+    <div class="mfoot"><button class="btn btn-p" style="flex:1" onclick="window.__saveMs()">Save milestones</button></div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
